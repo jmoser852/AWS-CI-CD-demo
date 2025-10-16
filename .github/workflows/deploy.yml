@@ -29,6 +29,7 @@ jobs:
         with:
           name: AWS-CI-CD-Demo
           template: ./cloudformation/cfn-static-website.yml
+          no-fail-on-empty-changeset: "1"
 
       - name: Upload files to S3
         run: |
