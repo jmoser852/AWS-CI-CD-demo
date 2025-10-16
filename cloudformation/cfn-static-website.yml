@@ -5,7 +5,7 @@ Resources:
   WebsiteBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub cicd-demo-s3bucket-${AWS::AccountId}
+      BucketName: cicd-demo-s3bucket-992382660379
       WebsiteConfiguration:
         IndexDocument: index.html
       PublicAccessBlockConfiguration:
