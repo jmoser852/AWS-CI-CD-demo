@@ -1,0 +1,36 @@
+name: Deploy CloudFormation stack and S3 web files
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v5.1.0
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::992382660379:role/GitHubActionsRole
+          role-session-name: ${{ github.run_id }}
+
+      - name: Deploy to AWS CloudFormation
+        uses: aws-actions/aws-cloudformation-github-deploy@v1
+        with:
+          name: AWS-CI-CD-Demo
+          template: ./cloudformation/cfn-static-website.yml
+          no-fail-on-empty-changeset: "1"
+
+      - name: Upload files to S3
+        run: |
+          aws s3 sync ./website/ s3://cicd-demo-s3bucket-992382660379/
