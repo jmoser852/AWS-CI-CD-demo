@@ -30,6 +30,6 @@ jobs:
           name: AWS-CI-CD-Demo
           template: ./cloudformation/cfn-static-website.yml
 
-      # - name: Upload files to S3
-      #  run: |
-      #   aws s3 cp ./your-file.txt s3://your-bucket-name/
+      - name: Upload files to S3
+        run: |
+          aws s3 sync ./website/ s3://cicd-demo-s3bucket-992382660379/
