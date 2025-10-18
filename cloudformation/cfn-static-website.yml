@@ -8,6 +8,7 @@ Resources:
       BucketName: cicd-demo-s3bucket-992382660379
       WebsiteConfiguration:
         IndexDocument: index.html
+        ErrorDocument: error.html
       PublicAccessBlockConfiguration:
         BlockPublicAcls: false
         BlockPublicPolicy: false
