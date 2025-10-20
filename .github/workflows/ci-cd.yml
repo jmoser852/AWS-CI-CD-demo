@@ -7,6 +7,27 @@ on:
   workflow_dispatch:
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v5.1.0
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::992382660379:role/GitHubActionsRole
+          role-session-name: ${{ github.run_id }}
+
+      - name: Validate CloudFormation Template
+        run: |
+          aws cloudformation validate-template --template-body file://cloudformation/cfn-static-website.yml
+
   deploy:
     runs-on: ubuntu-latest
     permissions:
