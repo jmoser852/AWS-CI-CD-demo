@@ -1,4 +1,4 @@
-name: Deploy CloudFormation stack and S3 web files
+name: AWS CI/CD
 
 on:
   push:
