@@ -29,6 +29,7 @@ jobs:
           aws cloudformation validate-template --template-body file://cloudformation/cfn-static-website.yml
 
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       id-token: write
