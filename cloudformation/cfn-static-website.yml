@@ -5,7 +5,7 @@ Resources:
   WebsiteBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: cicd-demo-s3bucket-992382660379
+      BucketName: cicd.jmoser.net
       WebsiteConfiguration:
         IndexDocument: index.html
         ErrorDocument: error.html
