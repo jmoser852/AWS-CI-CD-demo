@@ -52,7 +52,7 @@ jobs:
       - name: Deploy to AWS CloudFormation
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
-          name: AWS-CI-CD-Demo
+          name: AWS-CI-CD-Demo-${{ github.event.environment }}
           template: ./cloudformation/cfn-static-website.yml
           no-fail-on-empty-changeset: "1"
 
