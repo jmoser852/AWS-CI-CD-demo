@@ -30,6 +30,9 @@ jobs:
 
   deploy:
     needs: test
+    name: Deploy to Production
+    environment:
+      name: production
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -55,4 +58,4 @@ jobs:
 
       - name: Upload files to S3
         run: |
-          aws s3 sync ./website/ s3://cicd.jmoser.net/
+          aws s3 sync ./website/ s3://${{ vars.BUCKET_NAME }}/
