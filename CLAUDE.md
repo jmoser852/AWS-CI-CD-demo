@@ -4,58 +4,86 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AWS CI/CD Demo - A demonstration repository showing how to implement CI/CD pipelines with GitHub Actions to deploy static websites to AWS S3. The live website is accessible at: http://cicd-demo-s3bucket-992382660379.s3-website-us-east-1.amazonaws.com
+AWS CI/CD Demo - A demonstration repository showing how to implement multi-environment CI/CD pipelines with GitHub Actions to deploy static websites to AWS S3.
+
+**Live Environments:**
+- Production: http://cicd.jmoser.net
+- Staging: http://cicd-staging.jmoser.net
 
 ## Architecture
 
-This project uses Infrastructure as Code (IaC) with a GitOps deployment model:
+This project demonstrates a **GitOps-based multi-environment deployment pipeline** with Infrastructure as Code:
 
-1. **Infrastructure Layer**: CloudFormation template (`cloudformation/cfn-static-website.yml`) defines the S3 bucket with static website hosting configuration, public access settings, and bucket policies.
+### Three-Tier Pipeline Structure
 
-2. **Application Layer**: Simple static HTML website files in `website/` directory.
+1. **Test Job**: Validates CloudFormation template syntax before any deployment
+2. **Staging Deployment**: Deploys to staging environment after tests pass
+3. **Production Deployment**: Deploys to production only after successful staging deployment
 
-3. **CI/CD Pipeline**: GitHub Actions workflow (`.github/workflows/deploy.yml`) orchestrates the deployment:
-   - Uses OIDC authentication with AWS (no long-lived credentials)
-   - AWS IAM role: `arn:aws:iam::992382660379:role/GitHubActionsRole`
-   - Deploys CloudFormation stack first to ensure infrastructure exists
-   - Syncs website files to S3 bucket after infrastructure is ready
-   - Triggers on pushes to `main` branch or manual workflow dispatch
+### Key Architectural Components
 
-## Key AWS Resources
+1. **Infrastructure Layer** ([cloudformation/cfn-static-website.yml](cloudformation/cfn-static-website.yml)):
+   - Parameterized CloudFormation template (accepts `BucketName` parameter)
+   - Defines S3 bucket with static website hosting configuration
+   - Configures public access settings and bucket policies
+   - Outputs include WebsiteURL, BucketName, and BucketArn
 
-- **S3 Bucket**: `cicd-demo-s3bucket-992382660379` (configured for public website hosting)
-- **CloudFormation Stack**: `AWS-CI-CD-Demo`
-- **Region**: `us-east-1`
+2. **Application Layer**: Static HTML files in [website/](website/) directory
+   - [index.html](website/index.html) - main landing page
+   - [error.html](website/error.html) - error page
 
-## Deployment Workflow
+3. **CI/CD Pipeline** ([.github/workflows/ci-cd.yml](.github/workflows/ci-cd.yml)):
+   - Uses GitHub Actions with **environment-specific configurations**
+   - OIDC authentication with AWS (no long-lived credentials)
+   - Each environment (staging, production) has its own:
+     - GitHub Environment configuration
+     - S3 bucket (via `BUCKET_NAME` variable)
+     - CloudFormation stack name (`AWS-CI-CD-Demo-{ENVIRONMENT}`)
+   - Environment variables are configured at the **repository level**, not hardcoded
 
-The deployment follows this sequence:
-1. Code pushed to `main` branch triggers GitHub Actions workflow
-2. Workflow assumes AWS IAM role via OIDC (no access keys needed)
-3. CloudFormation stack is deployed/updated (`no-fail-on-empty-changeset: "1"` prevents failures when no changes detected)
-4. Website files are synced to S3 bucket using `aws s3 sync`
+## Environment Configuration
 
-## Testing Changes
+The pipeline uses GitHub repository variables and secrets:
 
-To test changes to the website or infrastructure:
+- **Repository Variables** (per environment):
+  - `AWS_REGION` - AWS region for deployment
+  - `BUCKET_NAME` - S3 bucket name for the environment
+  - `ENVIRONMENT` - Environment identifier (staging/production)
 
-1. **Test infrastructure changes locally** (requires AWS credentials):
-   ```bash
-   aws cloudformation validate-template --template-body file://cloudformation/cfn-static-website.yml
-   ```
+- **Repository Secrets**:
+  - `IAM_ROLE` - ARN of the IAM role for OIDC authentication
 
-2. **Deploy via GitHub Actions**:
-   - Push to `main` branch for automatic deployment
-   - Or trigger manual deployment via GitHub Actions UI (workflow_dispatch)
+## Deployment Flow
 
-3. **Verify deployment**:
-   - Check GitHub Actions run logs for deployment status
-   - Visit website URL to confirm changes are live
-   - Check CloudFormation stack status in AWS Console if needed
+```
+Push to main → Test → Deploy Staging → Deploy Production
+```
+
+Each deployment step:
+1. Assumes AWS IAM role via OIDC
+2. Deploys/updates CloudFormation stack with environment-specific parameters
+3. Syncs website files to environment-specific S3 bucket using `aws s3 sync`
+
+## Testing Infrastructure Changes
+
+**Validate CloudFormation template locally** (requires AWS credentials):
+```bash
+aws cloudformation validate-template --template-body file://cloudformation/cfn-static-website.yml
+```
+
+**Deploy changes:**
+- Push to `main` branch triggers automatic deployment pipeline
+- Or use GitHub Actions UI for manual workflow dispatch
+- Pipeline will automatically deploy to staging first, then production
+
+**Verify deployment:**
+- Check GitHub Actions logs for deployment status
+- Visit staging URL first, then production URL
+- Verify CloudFormation stack outputs in AWS Console if needed
 
 ## Important Notes
 
-- The S3 bucket name is hardcoded in both the CloudFormation template and the GitHub Actions workflow
-- The bucket is configured for public read access (required for static website hosting)
-- OIDC authentication is used instead of static AWS credentials for better security
-- The workflow includes `no-fail-on-empty-changeset: "1"` to prevent pipeline failures when CloudFormation detects no changes
+- CloudFormation stacks are **parameterized** - bucket names come from GitHub environment variables
+- The workflow uses `no-fail-on-empty-changeset: "1"` to prevent failures when no infrastructure changes are detected
+- OIDC authentication provides better security than static AWS credentials
+- Production deployment requires successful staging deployment (job dependency)
