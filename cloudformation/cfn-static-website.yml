@@ -1,11 +1,16 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: "CloudFormation template for S3 static website hosting"
 
+Parameters:
+  BucketName:
+    Description: Enter the name of the S3 bucket
+    Type: String
+
 Resources:
   WebsiteBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: cicd.jmoser.net
+      BucketName: !Ref BucketName
       WebsiteConfiguration:
         IndexDocument: index.html
         ErrorDocument: error.html
