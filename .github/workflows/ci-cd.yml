@@ -8,6 +8,7 @@ on:
 
 jobs:
   test:
+    name: Test
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -20,17 +21,51 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v5.1.0
         with:
-          aws-region: us-east-1
-          role-to-assume: arn:aws:iam::992382660379:role/GitHubActionsRole
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ secrets.IAM_ROLE }}
           role-session-name: ${{ github.run_id }}
 
       - name: Validate CloudFormation Template
         run: |
           aws cloudformation validate-template --template-body file://cloudformation/cfn-static-website.yml
 
-  deploy:
+  deploy-staging:
     needs: test
-    name: Deploy to Production
+    name: Staging
+    environment:
+      name: staging
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v5.1.0
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ secrets.IAM_ROLE }}
+          role-session-name: ${{ github.run_id }}
+
+      - name: Deploy to AWS CloudFormation
+        uses: aws-actions/aws-cloudformation-github-deploy@v1
+        with:
+          name: AWS-CI-CD-Demo-${{ vars.ENVIRONMENT }}
+          template: ./cloudformation/cfn-static-website.yml
+          no-fail-on-empty-changeset: "1"
+          parameter-overrides: >-
+            BucketName=${{ vars.BUCKET_NAME }}
+
+      - name: Upload files to S3
+        run: |
+          aws s3 sync ./website/ s3://${{ vars.BUCKET_NAME }}/
+
+  deploy-prod:
+    needs: deploy-staging
+    name: Production
     environment:
       name: production
     runs-on: ubuntu-latest
@@ -45,8 +80,8 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v5.1.0
         with:
-          aws-region: us-east-1
-          role-to-assume: arn:aws:iam::992382660379:role/GitHubActionsRole
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ secrets.IAM_ROLE }}
           role-session-name: ${{ github.run_id }}
 
       - name: Deploy to AWS CloudFormation
