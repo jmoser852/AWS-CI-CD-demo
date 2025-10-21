@@ -55,4 +55,4 @@ jobs:
 
       - name: Upload files to S3
         run: |
-          aws s3 sync ./website/ s3://cicd-demo-s3bucket-992382660379/
+          aws s3 sync ./website/ s3://cicd.jmoser.net/
